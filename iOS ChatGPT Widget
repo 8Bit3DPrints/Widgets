@@ -1,0 +1,95 @@
+let widget = new ListWidget()
+
+// Set the widget properties
+widget.backgroundColor = new Color("#000000")
+widget.setPadding(16, 16, 16, 16)
+
+// Add a heading label
+let heading = widget.addText("ChatGPT")
+heading.font = Font.boldSystemFont(20)
+
+// Add a spacer
+widget.addSpacer(10)
+
+// Add a description label
+let description = widget.addText("Send a message...")
+description.font = Font.systemFont(16)
+
+// Add a text input for the prompt
+let promptInput = widget.addText("")
+promptInput.font = Font.systemFont(16)
+promptInput.textColor = new Color("#000000")
+promptInput.centerAlignText()
+
+// Add a text input for the context
+let contextInput = widget.addText("")
+contextInput.font = Font.systemFont(16)
+contextInput.textColor = new Color("#000000")
+contextInput.centerAlignText()
+
+// Add a spacer
+widget.addSpacer(10)
+
+// Add a button to submit the prompt
+let submitButton = widget.addText("Submit")
+submitButton.font = Font.boldSystemFont(16)
+submitButton.textColor = new Color("#FFFFFF")
+submitButton.backgroundColor = new Color("#007AFF")
+submitButton.centerAlignText()
+
+// Set up the API request
+let apiKey = "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"
+let apiUrl = "https://api.openai.com/v1/engines/davinci-codex/completions"
+
+submitButton.url = "scriptable:///run?name=chatgpt&prompt=" + encodeURIComponent(promptInput.text) + "&context=" + encodeURIComponent(contextInput.text)
+
+submitButton.onTap = async function() {
+  let prompt = promptInput.text
+  let context = contextInput.text
+
+  // Show an activity indicator while waiting for the response
+  let activityIndicator = widget.addText("Loading...")
+  activityIndicator.font = Font.systemFont(16)
+  activityIndicator.textColor = new Color("#999999")
+  activityIndicator.centerAlignText()
+  
+  // Make the request to the ChatGPT API
+  let request = new Request(apiUrl)
+  request.headers = {
+    "Authorization": `Bearer ${apiKey}`,
+    "Content-Type": "application/json"
+  }
+  request.method = "POST"
+  request.body = JSON.stringify({
+    "prompt": prompt,
+    "max_tokens": 128,
+    "n": 1,
+    "stop": "\n",
+    "temperature": 0.7
+  })
+  
+  let response = await request.loadJSON()
+  let answer = response.choices[0].text
+  
+  // Remove the activity indicator
+  widget.removeChildren(3)
+  
+  // Add the answer to the widget
+  let answerText = widget.addText(answer)
+  answerText.font = Font.systemFont(16)
+  answerText.textColor = new Color("#333333")
+  answerText.centerAlignText()
+  
+  // Adjust the widget height to fit the answer text
+  let widgetHeight = widget.height
+  widgetHeight += answerText.height
+  widgetHeight += 16
+  widget.height = widgetHeight
+  
+  // Remove the input fields and submit button
+  widget.removeChildren(2, 4)
+  
+  // Present the widget
+  Script.setWidget(widget)
+  Script.complete()
+}
